@@ -1,0 +1,11 @@
+1) Separated files to different functions (edit/upload, create, remove/delete)
+2) Separated files to Structures
+3) Separated files for useful functions and etc
+
+4) Develop missing functions
+  -- upload 
+  -- create
+  -- delete
+  -- filter by name
+
+5) Merge with main file
