@@ -9,7 +9,7 @@ FILE *tmp = fopen("temp.txt");
 char line[LINE_MAX], key[ID_LEN];    
 int found = 0;          /*flag to remember if we deleted something */
 if (!src || !tmp) {
-    perror(&quot;File open error&quot;);
+    perror("File open error");
     return 1;
 }
 
@@ -19,7 +19,7 @@ scanf("%19s", key);
 while (fgets(line, sizeof line, src)) {
     /* assume the first token in each line is the name/ID */
     if (strncmp(line, key, strlen(key)) == 0) {
-        found = 1;          /* skip writing this line → delete it */
+        found = 1;          /* skip writing this line  delete it */
         continue;
     }
     fputs(line, tmp);       /* copy all other lines */
@@ -30,11 +30,12 @@ fclose(tmp);
 remove("asteroids.txt");
 rename("temp.txt","asteroids.txt");
 
-if (found)
+if (found){
     printf("Thank you! This asteroid was successfully removed from our database!\n");
-else
+}
+else{
     printf("No matching asteroid found.\n");
-
+}
 return 0;
 
 }
