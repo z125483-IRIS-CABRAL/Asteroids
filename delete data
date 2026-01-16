@@ -1,0 +1,27 @@
+#include<stdio.h>
+file1=fopen("potentially_hazardous_asteroids.csv","r");
+file2=fopen("potentially_hazardous_asteroids2.csv","r");
+file3=fopen("potentially_hazardous_asteroids3.csv","r");
+file4=fopen("potentially_hazardous_asteroids4.csv","r");
+if(file1 == NULL){
+        printf("Error opening a file");
+}
+if(file2 == NULL){
+        printf("Error opening a file");
+}
+if(file3 == NULL){
+        printf("Error opening a file");
+}
+if(file4 == NULL){
+        printf("Error opening a file");
+}A
+printf("Enter the name you want to remove for the list");
+
+temp=fopen("temp.csv","w");
+fclose(temp);
+fclose(file1);
+fclose(file2);
+fclose(file3);
+fclose(file4);
+
+
