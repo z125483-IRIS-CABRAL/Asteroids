@@ -1,27 +1,40 @@
-#include<stdio.h>
-file1=fopen("potentially_hazardous_asteroids.csv","r");
-file2=fopen("potentially_hazardous_asteroids2.csv","r");
-file3=fopen("potentially_hazardous_asteroids3.csv","r");
-file4=fopen("potentially_hazardous_asteroids4.csv","r");
-if(file1 == NULL){
-        printf("Error opening a file");
+#include <stdio.h>
+#include <string.h>
+#define ID_LEN 20          /* max length of asteroid name/ID */
+#define LINE_MAX 256
+int main(void)
+{    
+FILE *src = fopen("asteroids.txt");    
+FILE *tmp = fopen("temp.txt");    
+char line[LINE_MAX], key[ID_LEN];    
+int found = 0;          /*flag to remember if we deleted something */
+if (!src || !tmp) {
+    perror(&quot;File open error&quot;);
+    return 1;
 }
-if(file2 == NULL){
-        printf("Error opening a file");
+
+printf("Enter asteroid name (or ID) to delete:");
+scanf("%19s", key);
+
+while (fgets(line, sizeof line, src)) {
+    /* assume the first token in each line is the name/ID */
+    if (strncmp(line, key, strlen(key)) == 0) {
+        found = 1;          /* skip writing this line → delete it */
+        continue;
+    }
+    fputs(line, tmp);       /* copy all other lines */
 }
-if(file3 == NULL){
-        printf("Error opening a file");
+
+fclose(src);
+fclose(tmp);
+remove("asteroids.txt");
+rename("temp.txt","asteroids.txt");
+
+if (found)
+    printf("Thank you! This asteroid was successfully removed from our database!\n");
+else
+    printf("No matching asteroid found.\n");
+
+return 0;
+
 }
-if(file4 == NULL){
-        printf("Error opening a file");
-}A
-printf("Enter the name you want to remove for the list");
-
-temp=fopen("temp.csv","w");
-fclose(temp);
-fclose(file1);
-fclose(file2);
-fclose(file3);
-fclose(file4);
-
-
