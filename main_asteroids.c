@@ -5,8 +5,10 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "edit_data.h"
 #include "asteroid_db.h"
+#include "delete_data.h"
 
 /* function's prototype*/
 void loadingBar(const char *texto, int passos, int delay_us);
@@ -38,13 +40,12 @@ void cleanWindow() {
 #define LINE_MAX_LEN 2048
 
 typedef struct {
-        int start;            // ex: 20251201
-        int end;              // ex: 20251208
-        const char *csv;      // ex: "dez01.csv"
-    } RangeMap;
+    int start;            // ex: 20251201
+    int end;              // ex: 20251208
+    const char *csv;      // ex: "dez01.csv"
+} RangeMap;
 
-
-/* ---------- DB (memória) ---------- */
+/* ---------- DB (memory) ---------- */
 static void db_init(AsteroidDB *db) {
     db->data = NULL;
     db->size = 0;
@@ -119,11 +120,11 @@ void loadingBar(const char *texto, int passos, int delay_us) {
 
 
 /* Useful functions */
-static void tolower_str(char *s) {
+void tolower_str(char *s) {
     for (; s && *s; s++) *s = (char)tolower((unsigned char)*s);
 }
 
-static void trim_newline(char *s) {
+void trim_newline(char *s) {
     if (!s) return;
     size_t n = strlen(s);
     while (n > 0 && (s[n-1] == '\n' || s[n-1] == '\r')) {
@@ -132,7 +133,7 @@ static void trim_newline(char *s) {
     }
 }
 
-static long read_long(const char *prompt) {
+long read_long(const char *prompt) {
     char buf[256];
     long x;
     for (;;) {
@@ -143,7 +144,7 @@ static long read_long(const char *prompt) {
     }
 }
 
-static double read_double(const char *prompt) {
+double read_double(const char *prompt) {
     char buf[256];
     double x;
     for (;;) {
@@ -151,11 +152,11 @@ static double read_double(const char *prompt) {
         if (!fgets(buf, sizeof(buf), stdin)) return 0.0;
         if (sscanf(buf, "%lf", &x) == 1) return x;
         printf("Invalid input, hacker. Try again!\n");
-    }
+    }   
 }
 
 
-static void read_string(const char *prompt, char *out, size_t outsz) {
+void read_string(const char *prompt, char *out, size_t outsz) {
     printf("%s", prompt);
     if (fgets(out, (int)outsz, stdin)) {
         trim_newline(out);
@@ -164,7 +165,7 @@ static void read_string(const char *prompt, char *out, size_t outsz) {
     }
 }
 
-static int read_int(const char *prompt) {
+int read_int(const char *prompt) {
     char buf[256];
     int x;
     for (;;) {
@@ -175,7 +176,7 @@ static int read_int(const char *prompt) {
     }
 }
 
-static int split_csv_simple(char *line, char *fields[], int max_fields) {
+int split_csv_simple(char *line, char *fields[], int max_fields) {
     int count = 0;
     char *p = line;
     while (*p && count < max_fields) {
@@ -187,7 +188,7 @@ static int split_csv_simple(char *line, char *fields[], int max_fields) {
 }
 
 
-static int parse_csv_line(char *line, Asteroid *out) {
+int parse_csv_line(char *line, Asteroid *out) {
     trim_newline(line);
     if (line[0] == '\0') return 0;
 
@@ -243,7 +244,7 @@ static int load_csv(const char *path, AsteroidDB *db) {
     return 1;
 }
 
-static void print_one(const Asteroid *a) {
+void print_one(const Asteroid *a) {
     printf("%-10s | %-22s | %-6ld | %-3s | %6.1f m | %6.1f m | %10.0f km | %6.2f km/s\n",
            a->date,
            a->name,
@@ -255,7 +256,7 @@ static void print_one(const Asteroid *a) {
            a->velocity_km_s);
 }
 
-static void print_header(void) {
+void print_header(void) {
     printf("DATE       | NAME                   | ID     | HZD | Dmin(m) | Dmax(m) | MISS_DIST(km) | VEL(km/s)\n");
     printf("-----------------------------------------------------------------------------------------------\n");
 }
@@ -267,7 +268,7 @@ static int append_asteroid_csv(const char *path, const Asteroid *a) {
         return 0;
     }
 
-    // formato: date,name,id,hazardous,absolute_magnitude_h,
+    // format: date,name,id,hazardous,absolute_magnitude_h,
     //          diameter_min_m,diameter_max_m,miss_distance_km,velocity_km_s
     fprintf(fp, "%s,%s,%ld,%s,%.10f,%.10f,%.10f,%.10f,%.10f\n",
             a->date,
@@ -286,13 +287,13 @@ static int append_asteroid_csv(const char *path, const Asteroid *a) {
 
 
 /* CRUD Functions */
-static void list_all(const AsteroidDB *db) {
+void list_all(const AsteroidDB *db) {
     print_header();
     size_t i;
     for (i = 0; i < db->size; i++) print_one(&db->data[i]);
 }
 
-/*static void list_hazardous(const AsteroidDB *db) {
+/*void list_hazardous(const AsteroidDB *db) {
     basicTransition("PLANETARY DEFENSE MODE: FILTERING THE MOST DANGEROUS ONES");
     asteroidImpact(); 
 
@@ -303,19 +304,18 @@ static void list_all(const AsteroidDB *db) {
     }
 }*/
 
-static void show_menu(void) {
+void show_menu(void) {
     printf("\n=== WELCOMEEEEE EXPLORER!! ===\n");
     printf("1) List all\n");
     printf("2) Change the date range\n");
     printf("3) Search by name\n");
     printf("4) New register\n");
     printf("5) Update\n");
-    printf("6) Delete <notworking>\n");
-    printf("7) Save CSV <notworking>\n");
-    printf("0) QUIT <notworking>\n");
+    printf("6) Delete\n");
+    printf("0) QUIT\n");
 }
 
-static void search_by_name(const AsteroidDB *db) {
+void search_by_name(const AsteroidDB *db) {
     char q[STR_MAX];
     read_string("Digite parte do nome (case-insensitive): ", q, sizeof(q));
     char qlow[STR_MAX];
@@ -334,56 +334,100 @@ static void search_by_name(const AsteroidDB *db) {
 }
 
  /*  LUCAS - NEW REGISTER */
-static void new_register(AsteroidDB *db, char *g_csv_path) {
+static int datekey_from_ymd_dash(const char *s) {
+    int y, m, d;
+    if (sscanf(s, "%d-%d-%d", &y, &m, &d) != 3) return -1;
+    if (y < 1900 || m < 1 || m > 12 || d < 1 || d > 31) return -1;
+    return y * 10000 + m * 100 + d;
+}
+
+static const char* csv_for_key(int key, const RangeMap *maps, int maps_n) {
+    for (int i = 0; i < maps_n; i++) {
+        if (key >= maps[i].start && key <= maps[i].end) return maps[i].csv;
+    }
+    return NULL;
+}
+
+static long generate_next_id(const AsteroidDB *db) {
+    long max_id = 0;
+
+    for (size_t i = 0; i < db->size; i++) {
+        if (db->data[i].id > max_id) {
+            max_id = db->data[i].id;
+        }
+    }
+    return max_id + 1;
+}
+
+void new_register(AsteroidDB *db, char *g_csv_path, const RangeMap *maps, int maps_n) {
     basicTransition("REGISTERING NEW NEAR-EARTH OBJECT");
 
     Asteroid a;
-
-    // 1) Strings
     read_string("Date (YYYY-MM-DD): ", a.date, sizeof(a.date));
-    //if date is not nbetween the range of the current CSV, change CSV and save on the correct one. 
-    // alert and change the csv
+    int new_key = datekey_from_ymd_dash(a.date);
+    if (new_key < 0) {
+        printf("[ERROR] Invalid date format. Use YYYY-MM-DD.\n");
+        return;
+    }
+
+    const char *target_csv = csv_for_key(new_key, maps, maps_n);
+    if (!target_csv) {
+        printf("[ERROR] Sorry, there is no CSV data for this date (%s).\n", a.date);
+        return;
+    }
+
+    if (strcmp(g_csv_path, target_csv) != 0) {
+        printf("\n[WARNING] This record belongs to '%s', but you are currently using '%s'.\n",
+               target_csv, g_csv_path);
+        printf("Do you want to switch to '%s' and save the new record there? (1=yes, 0=no): ",
+               target_csv);
+
+        int ans = read_int("");
+        if (ans != 1) {
+            printf("Canceled. Tip: change the date range in the menu first.\n");
+            return;
+        }
+
+        strcpy(g_csv_path, target_csv);
+        db->size = 0;
+        if (!load_csv(g_csv_path, db)) {
+            printf("[ERROR] Failed to load CSV '%s'. Canceling insert.\n", g_csv_path);
+            return;
+        }
+        printf("[OK] Switched to %s. Database reloaded.\n", g_csv_path);
+    }
 
     read_string("Name: ", a.name, sizeof(a.name));
+    //a.id = read_long("NEO ID (integer, ex: 2067381): ");
 
-    // 2) ID numérico
-    a.id = read_long("NEO ID (integer, ex: 2067381): ");
-
-    // 3) Hazardous – input tipo True/False
     char hazbuf[16];
     read_string("Hazardous? (True/False): ", hazbuf, sizeof(hazbuf));
-    char *p;
-    for (p = hazbuf; *p; ++p) {
-        *p = (char)tolower((unsigned char)*p);
-    }
-    a.isHazardous = (strcmp(hazbuf, "true") == 0 ||
-                     strcmp(hazbuf, "yes")  == 0 ||
-                     strcmp(hazbuf, "1")    == 0);
+    for (char *p = hazbuf; *p; p++) *p = (char)tolower((unsigned char)*p);
+    a.isHazardous = (strcmp(hazbuf, "true") == 0 || strcmp(hazbuf, "yes") == 0 || strcmp(hazbuf, "1") == 0);
 
-    // 4) Dados numéricos
-    a.absolute_magnitude_h = read_double("Absolute magnitude H (eg: 19.8): ");
-    a.diameter_min_m       = read_double("Min diameter (m, eg: 291.44): ");
-    a.diameter_max_m       = read_double("Max diameter (m, eg: 651.68): ");
-    a.miss_distance_km     = read_double("Miss distance (km, eg: 12024984.01): ");
-    a.velocity_km_s        = read_double("Velocity (km/s, eg: 19.84): ");
+    a.absolute_magnitude_h = read_double("Absolute magnitude H: ");
+    a.diameter_min_m       = read_double("Min diameter (m): ");
+    a.diameter_max_m       = read_double("Max diameter (m): ");
+    a.miss_distance_km     = read_double("Miss distance (km): ");
+    a.velocity_km_s        = read_double("Velocity (km/s): ");
+    a.id = generate_next_id(db);
+    printf("Generated NEO ID: %ld\n", a.id);
+
 
     if (!db_push(db, a)) {
         printf("Erro: memória insuficiente ao inserir novo registro.\n");
         return;
     }
 
-    // salva imediatamente no CSV também
     if (!append_asteroid_csv(g_csv_path, &a)) {
-        printf("Warning! Nre register inserted in the memory, BUT NOT in the CSV file.\n");
+        printf("[WARNING] Saved in memory, but FAILED to update CSV.\n");
     } else {
-        printf("New register saved in CSV file: %s\n", g_csv_path);
+        printf("[SUCCESS] New asteroid saved in %s\n", g_csv_path);
     }
 
-    printf("\nNew asteroid registered successfully!\n");
     print_header();
     print_one(&a);
 }
-
 
 
 int main(void) {
@@ -401,31 +445,30 @@ int main(void) {
     };
     const int maps_n = (int)(sizeof(maps) / sizeof(maps[0]));
 
-    printf("Type a date to unblock the secret data (YYYY/MM/DD): ");
+    printf("Type a date to unblock the secret data (YYYY-MM-DD): ");
     if (!fgets(input, sizeof(input), stdin)) {
         printf("Input error.\n");
         return 1;
     }
 
     int year, month, day;
-    if (sscanf(input, "%d/%d/%d", &year, &month, &day) != 3) {
+    if (sscanf(input, "%d-%d-%d", &year, &month, &day) != 3) {
         printf("Sorry, invalid input format! Not this time, hacker.\n");
         return 1;
     }
 
-    // validação simples
+
     if (year < 1900 || month < 1 || month > 12 || day < 1 || day > 31) {
         printf("Sorry, invalid date values.\n");
         return 1;
     }
 
-    int key = year * 10000 + month * 100 + day; // YYYYMMDD
+    int key = year * 10000 + month * 100 + day; 
     int i;
 
-    // escolhe o csv baseado na tabela
     for (i = 0; i < maps_n; i++) {
         if (key >= maps[i].start && key <= maps[i].end) {
-            strcpy(path_in, maps[i].csv);   // <-- aqui é o jeito certo
+            strcpy(path_in, maps[i].csv);  
             break;
         }
     }
@@ -458,14 +501,14 @@ int main(void) {
         else if (op == 2){
         path_in[0] = '\0';
         char new_input[64];
-            printf("Type a date to unblock the secret data (YYYY/MM/DD): ");
+            printf("Type a date to unblock the secret data (YYYY-MM-DD): ");
             if (!fgets(new_input, sizeof(new_input), stdin)) {
                 printf("Input error.\n");
                 return 1;
             }
 
             int new_year, new_month, new_day;            
-            if (sscanf(new_input, "%d/%d/%d", &new_year, &new_month, &new_day) != 3) {
+            if (sscanf(new_input, "%d-%d-%d", &new_year, &new_month, &new_day) != 3) {
                 printf("Sorry, invalid input format! Not this time, hacker.\n");
                 return 1;
             }
@@ -503,10 +546,9 @@ int main(void) {
 
         }
         else if (op == 3) search_by_name(&db);
-        else if(op == 4) new_register(&db, path_in);
+        else if(op == 4) new_register(&db, path_in, maps, maps_n);
         else if (op == 5) edit_data(&db);
-
-        // ... (resto das opções)
+        else if(op == 6) delete_data(&db, path_in);
 
         int again = read_int("Do you want to explore more? (1=yes, 0=no): ");
         if (again == 0) break;
