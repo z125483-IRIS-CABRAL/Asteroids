@@ -6,13 +6,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+
 /* function's prototype*/
 void loadingBar(const char *texto, int passos, int delay_us);
 void basicTransition(const char *titulo);
 void asteroidImpact(void);
 void cleanWindow(void);
 
-/* BASIC COMMANDS TO USE DURING THE ENTIRE EXECUTION */
+
+ /* BASIC COMMANDS TO USE DURING THE ENTIRE EXECUTION */
 #ifdef _WIN32
   #include <windows.h>
   void sleepNew(int micros) { Sleep(micros / 1000); } // aproximação
@@ -29,19 +31,17 @@ void cleanWindow() {
 #endif
 }
 
+
 /* defining*/
 #define LINE_MAX_LEN 2048
 #define STR_MAX 128
-
-/* caminho global do CSV atual */
-static char g_csv_path[256] = "asteroids.csv";
 
 /* STRUCTURES */
 typedef struct {
     char date[16];                  // 2026-01-04
     char name[STR_MAX];             // 67381 (2000 OL8)
     long id;                        // id do NEO
-    int isHazardous;                // True / False
+    int isHazardous;                  // True / False
     double absolute_magnitude_h;    // H
     double diameter_min_m;
     double diameter_max_m;
@@ -49,11 +49,20 @@ typedef struct {
     double velocity_km_s;
 } Asteroid;
 
+
 typedef struct {
     Asteroid *data;
     size_t size;    // quantos registros usados
     size_t cap;     // capacidade alocada
 } AsteroidDB;
+
+
+typedef struct {
+        int start;            // ex: 20251201
+        int end;              // ex: 20251208
+        const char *csv;      // ex: "dez01.csv"
+    } RangeMap;
+
 
 /* ---------- DB (memória) ---------- */
 static void db_init(AsteroidDB *db) {
@@ -84,6 +93,7 @@ static int db_push(AsteroidDB *db, Asteroid a) {
     db->data[db->size++] = a;
     return 1;
 }
+
 
 /* Animation Functions */
 void asteroidImpact(void) {
@@ -127,7 +137,12 @@ void loadingBar(const char *texto, int passos, int delay_us) {
     printf("\n");
 }
 
+
 /* Useful functions */
+static void tolower_str(char *s) {
+    for (; s && *s; s++) *s = (char)tolower((unsigned char)*s);
+}
+
 static void trim_newline(char *s) {
     if (!s) return;
     size_t n = strlen(s);
@@ -136,6 +151,29 @@ static void trim_newline(char *s) {
         n--;
     }
 }
+
+static long read_long(const char *prompt) {
+    char buf[256];
+    long x;
+    for (;;) {
+        printf("%s", prompt);
+        if (!fgets(buf, sizeof(buf), stdin)) return 0;
+        if (sscanf(buf, "%ld", &x) == 1) return x;
+        printf("Invalid input, hacker. Try again!\n");
+    }
+}
+
+static double read_double(const char *prompt) {
+    char buf[256];
+    double x;
+    for (;;) {
+        printf("%s", prompt);
+        if (!fgets(buf, sizeof(buf), stdin)) return 0.0;
+        if (sscanf(buf, "%lf", &x) == 1) return x;
+        printf("Invalid input, hacker. Try again!\n");
+    }
+}
+
 
 static void read_string(const char *prompt, char *out, size_t outsz) {
     printf("%s", prompt);
@@ -157,29 +195,6 @@ static int read_int(const char *prompt) {
     }
 }
 
-static long read_long(const char *prompt) {
-    char buf[256];
-    long x;
-    for (;;) {
-        printf("%s", prompt);
-        if (!fgets(buf, sizeof(buf), stdin)) return 0;
-        if (sscanf(buf, "%ld", &x) == 1) return x;
-        printf("Entrada inválida. Tente novamente.\n");
-    }
-}
-
-static double read_double(const char *prompt) {
-    char buf[256];
-    double x;
-    for (;;) {
-        printf("%s", prompt);
-        if (!fgets(buf, sizeof(buf), stdin)) return 0.0;
-        if (sscanf(buf, "%lf", &x) == 1) return x;
-        printf("Entrada inválida. Tente novamente.\n");
-    }
-}
-
-// split bem simples por vírgula (não lida com vírgula dentro de aspas)
 static int split_csv_simple(char *line, char *fields[], int max_fields) {
     int count = 0;
     char *p = line;
@@ -190,6 +205,7 @@ static int split_csv_simple(char *line, char *fields[], int max_fields) {
     }
     return count;
 }
+
 
 static int parse_csv_line(char *line, Asteroid *out) {
     trim_newline(line);
@@ -226,7 +242,7 @@ static int parse_csv_line(char *line, Asteroid *out) {
 }
 
 static int load_csv(const char *path, AsteroidDB *db) {
-    FILE *fp = fopen(path, "r");
+    FILE *fp = fopen(path, "r"); // modo "r" conforme tabela de modos :contentReference[oaicite:3]{index=3}
     if (!fp) {
         printf("Erro: não consegui abrir '%s'\n", path);
         return 0;
@@ -247,11 +263,27 @@ static int load_csv(const char *path, AsteroidDB *db) {
     return 1;
 }
 
-/* escreve apenas UM asteroide no final do CSV (append) */
+static void print_one(const Asteroid *a) {
+    printf("%-10s | %-22s | %-6ld | %-3s | %6.1f m | %6.1f m | %10.0f km | %6.2f km/s\n",
+           a->date,
+           a->name,
+           a->id,
+           a->isHazardous ? "YES" : "NO",
+           a->diameter_min_m,
+           a->diameter_max_m,
+           a->miss_distance_km,
+           a->velocity_km_s);
+}
+
+static void print_header(void) {
+    printf("DATE       | NAME                   | ID     | HZD | Dmin(m) | Dmax(m) | MISS_DIST(km) | VEL(km/s)\n");
+    printf("-----------------------------------------------------------------------------------------------\n");
+}
+
 static int append_asteroid_csv(const char *path, const Asteroid *a) {
     FILE *fp = fopen(path, "a");
     if (!fp) {
-        printf("Erro: não consegui abrir '%s' para escrita (append).\n", path);
+        printf("Erro: I could not open '%s' to write (append).\n", path);
         return 0;
     }
 
@@ -272,22 +304,6 @@ static int append_asteroid_csv(const char *path, const Asteroid *a) {
     return 1;
 }
 
-static void print_one(const Asteroid *a) {
-    printf("%-10s | %-22s | %-8ld | %-3s | %6.1f m | %6.1f m | %12.0f km | %6.2f km/s\n",
-           a->date,
-           a->name,
-           a->id,
-           a->isHazardous ? "YES" : "NO",
-           a->diameter_min_m,
-           a->diameter_max_m,
-           a->miss_distance_km,
-           a->velocity_km_s);
-}
-
-static void print_header(void) {
-    printf("DATE       | NAME                   | ID       | HZD | Dmin(m) | Dmax(m) |  MISS_DIST(km) | VEL(km/s)\n");
-    printf("-----------------------------------------------------------------------------------------------------\n");
-}
 
 /* CRUD Functions */
 static void list_all(const AsteroidDB *db) {
@@ -296,7 +312,7 @@ static void list_all(const AsteroidDB *db) {
     for (i = 0; i < db->size; i++) print_one(&db->data[i]);
 }
 
-static void list_hazardous(const AsteroidDB *db) {
+/*static void list_hazardous(const AsteroidDB *db) {
     basicTransition("PLANETARY DEFENSE MODE: FILTERING THE MOST DANGEROUS ONES");
     asteroidImpact(); 
 
@@ -305,16 +321,47 @@ static void list_hazardous(const AsteroidDB *db) {
     for (i = 0; i < db->size; i++) {
         if (db->data[i].isHazardous) print_one(&db->data[i]);
     }
+}*/
+
+static void show_menu(void) {
+    printf("\n=== WELCOMEEEEE EXPLORER!! ===\n");
+    printf("1) List all\n");
+    printf("2) Change the date range\n");
+    printf("3) Search by name\n");
+    printf("4) New register\n");
+    printf("5) Update <notworking>\n");
+    printf("6) Delete <notworking>\n");
+    printf("7) Save CSV <notworking>\n");
+    printf("0) QUIT <notworking>\n");
 }
 
-static void new_register(AsteroidDB *db) {
+static void search_by_name(const AsteroidDB *db) {
+    char q[STR_MAX];
+    read_string("Digite parte do nome (case-insensitive): ", q, sizeof(q));
+    char qlow[STR_MAX];
+    strncpy(qlow, q, sizeof(qlow)-1); qlow[sizeof(qlow)-1] = '\0';
+    tolower_str(qlow);
+
+    print_header();
+    size_t i;
+    for (i = 0; i < db->size; i++) {
+        char name_low[STR_MAX];
+        strncpy(name_low, db->data[i].name, sizeof(name_low)-1); name_low[sizeof(name_low)-1] = '\0';
+        tolower_str(name_low);
+
+        if (strstr(name_low, qlow)) print_one(&db->data[i]);
+    }
+}
+
+ /*  LUCAS - NEW REGISTER */
+static void new_register(AsteroidDB *db, char *g_csv_path) {
     basicTransition("REGISTERING NEW NEAR-EARTH OBJECT");
 
     Asteroid a;
 
     // 1) Strings
     read_string("Date (YYYY-MM-DD): ", a.date, sizeof(a.date));
-    read_string("Name (ex: 67381 (2000 OL8)): ", a.name, sizeof(a.name));
+    read_string("Name: ", a.name, sizeof(a.name));
 
     // 2) ID numérico
     a.id = read_long("NEO ID (integer, ex: 2067381): ");
@@ -322,7 +369,8 @@ static void new_register(AsteroidDB *db) {
     // 3) Hazardous – input tipo True/False
     char hazbuf[16];
     read_string("Hazardous? (True/False): ", hazbuf, sizeof(hazbuf));
-    for (char *p = hazbuf; *p; ++p) {
+    char *p;
+    for (p = hazbuf; *p; ++p) {
         *p = (char)tolower((unsigned char)*p);
     }
     a.isHazardous = (strcmp(hazbuf, "true") == 0 ||
@@ -330,11 +378,11 @@ static void new_register(AsteroidDB *db) {
                      strcmp(hazbuf, "1")    == 0);
 
     // 4) Dados numéricos
-    a.absolute_magnitude_h = read_double("Absolute magnitude H (ex: 19.8): ");
-    a.diameter_min_m       = read_double("Min diameter (m, ex: 291.44): ");
-    a.diameter_max_m       = read_double("Max diameter (m, ex: 651.68): ");
-    a.miss_distance_km     = read_double("Miss distance (km, ex: 12024984.01): ");
-    a.velocity_km_s        = read_double("Velocity (km/s, ex: 19.84): ");
+    a.absolute_magnitude_h = read_double("Absolute magnitude H (eg: 19.8): ");
+    a.diameter_min_m       = read_double("Min diameter (m, eg: 291.44): ");
+    a.diameter_max_m       = read_double("Max diameter (m, eg: 651.68): ");
+    a.miss_distance_km     = read_double("Miss distance (km, eg: 12024984.01): ");
+    a.velocity_km_s        = read_double("Velocity (km/s, eg: 19.84): ");
 
     if (!db_push(db, a)) {
         printf("Erro: memória insuficiente ao inserir novo registro.\n");
@@ -343,9 +391,9 @@ static void new_register(AsteroidDB *db) {
 
     // salva imediatamente no CSV também
     if (!append_asteroid_csv(g_csv_path, &a)) {
-        printf("Aviso: registro inserido na memória, mas NÃO foi salvo no CSV.\n");
+        printf("Warning! Nre register inserted in the memory, BUT NOT in the CSV file.\n");
     } else {
-        printf("Registro salvo no CSV: %s\n", g_csv_path);
+        printf("New register saved in CSV file: %s\n", g_csv_path);
     }
 
     printf("\nNew asteroid registered successfully!\n");
@@ -353,62 +401,134 @@ static void new_register(AsteroidDB *db) {
     print_one(&a);
 }
 
-static void show_menu(void) {
-    printf("\n=== WELCOMEEEEE EXPLORER!! ===\n");
-    printf("1) List all\n");
-    printf("2) List the most dangerous ones\n");
-    printf("3) Search by name <notworking>\n");
-    printf("4) New register\n");
-    printf("5) Update <notworking>\n");
-    printf("6) Delete <notworking>\n");
-    printf("7) Save CSV <notworking>\n");
-    printf("0) QUIT <notworking>\n");
-}
+
 
 int main(void) {
     AsteroidDB db;
     db_init(&db);
 
-    read_string("Caminho do CSV de entrada (ex: asteroids.csv): ",
-                g_csv_path, sizeof(g_csv_path));
+    char path_in[256] = "";
+    char input[64];
+
+    const RangeMap maps[] = {
+        {20251201, 20251208, "dez01.csv"},
+        {20251209, 20251216, "dez02.csv"},
+        {20251217, 20251224, "dez03.csv"},
+        {20260101, 20260105, "jan01.csv"},
+    };
+    const int maps_n = (int)(sizeof(maps) / sizeof(maps[0]));
+
+    printf("Type a date to unblock the secret data (YYYY/MM/DD): ");
+    if (!fgets(input, sizeof(input), stdin)) {
+        printf("Input error.\n");
+        return 1;
+    }
+
+    int year, month, day;
+    if (sscanf(input, "%d/%d/%d", &year, &month, &day) != 3) {
+        printf("Sorry, invalid input format! Not this time, hacker.\n");
+        return 1;
+    }
+
+    // validação simples
+    if (year < 1900 || month < 1 || month > 12 || day < 1 || day > 31) {
+        printf("Sorry, invalid date values.\n");
+        return 1;
+    }
+
+    int key = year * 10000 + month * 100 + day; // YYYYMMDD
+    int i;
+
+    // escolhe o csv baseado na tabela
+    for (i = 0; i < maps_n; i++) {
+        if (key >= maps[i].start && key <= maps[i].end) {
+            strcpy(path_in, maps[i].csv);   // <-- aqui é o jeito certo
+            break;
+        }
+    }
+
+    if (path_in[0] == '\0') {
+        printf("Sorry, there is no data for this range! Let's explore more.\n");
+        db_free(&db);
+        return 1;
+    }
 
     basicTransition("STARTING MISSION SYSTEMS");
     loadingBar("Getting NEOs catalogs", 28, 40000);
 
-    if (!load_csv(g_csv_path, &db)) {
+    if (!load_csv(path_in, &db)) {
         printf("Failed to load CSV. Finishing.\n");
         db_free(&db);
         return 1;
     }
 
-    loadingBar("Syncroning db and memory", 20, 35000);
-    printf("OK! %zu registers loaded!\n", db.size);
+    loadingBar("Synchronizing db and memory", 20, 35000);
+    printf("OK! %zu registers loaded from %s!\n", db.size, path_in);
 
     show_menu();
 
     for (;;) {
         int op = read_int("Your choice: ");
+        if (op == 0) break;
+        else if (op == 1) list_all(&db);
+//        else if (op == 2) list_hazardous(&db);
+        else if (op == 2){
+        path_in[0] = '\0';
+        char new_input[64];
+            printf("Type a date to unblock the secret data (YYYY/MM/DD): ");
+            if (!fgets(new_input, sizeof(new_input), stdin)) {
+                printf("Input error.\n");
+                return 1;
+            }
 
-        if (op == 0) {
-            break;
-        } else if (op == 1) {
-            list_all(&db);
-        } else if (op == 2) {
-            list_hazardous(&db);
-        } else if (op == 4) {
-            new_register(&db);
-        } else {
-            printf("Option not implemented yet.\n");
+            int new_year, new_month, new_day;            
+            if (sscanf(new_input, "%d/%d/%d", &new_year, &new_month, &new_day) != 3) {
+                printf("Sorry, invalid input format! Not this time, hacker.\n");
+                return 1;
+            }
+            if (new_year < 1900 || new_month < 1 || new_month > 12 || new_day < 1 || new_day > 31) {
+                printf("Sorry, invalid date values.\n");
+                return 1;
+            }
+
+            int i;
+            int new_key = new_year * 10000 + new_month * 100 + new_day; // YYYYMMDD
+            for (i = 0; i < maps_n; i++) {
+                if (new_key >= maps[i].start && new_key <= maps[i].end) {
+                    strcpy(path_in, maps[i].csv);   
+                    break;
+                }
+            }
+
+            if (path_in[0] == '\0') {
+                printf("Sorry, there is no data for this range! Let's explore more.\n");
+                db_free(&db);
+                return 1;
+            }
+
+            basicTransition("STARTING MISSION SYSTEMS");
+            loadingBar("Getting NEOs catalogs", 28, 40000);
+
+            if (!load_csv(path_in, &db)) {
+                printf("Failed to load CSV. Finishing.\n");
+                db_free(&db);
+                return 1;
+            }
+
+            loadingBar("Synchronizing db and memory", 20, 35000);
+            printf("OK! %zu registers loaded from %s!\n", db.size, path_in);
+
         }
+        else if (op == 3) search_by_name(&db);
+        else if(op == 4) new_register(&db, path_in);
+        // ... (resto das opções)
 
-        printf("Do you want to do something else? (Y - 0 / N - 1)");
-        int nx = read_int(" ");
-
-        if (nx == 1) break;
-        else show_menu();
+        int again = read_int("Do you want to explore more? (1=yes, 0=no): ");
+        if (again == 0) break;
+        show_menu();
     }
 
-    printf("That's all baby!!\n");
     db_free(&db);
+    printf("That's all baby!!\n");
     return 0;
 }
