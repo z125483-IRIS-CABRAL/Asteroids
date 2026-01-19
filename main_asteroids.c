@@ -21,7 +21,7 @@ void cleanWindow(void);
  /* BASIC COMMANDS TO USE DURING THE ENTIRE EXECUTION */
 #ifdef _WIN32
   #include <windows.h>
-  void sleepNew(int micros) { Sleep(micros / 1000); } // aproximação
+  void sleepNew(int micros) { Sleep(micros / 1000); } 
 #else
   #include <unistd.h>
   void sleepNew(int micros) { usleep(micros); }
@@ -81,11 +81,11 @@ void asteroidImpact(void) {
 
     int i;
     const char *frames[] = {
-        "           .\n\n  Terra:  (____)\n",
-        "         ...\n\n  Terra:  (____)\n",
-        "      .........\n\n  Terra:  (____)\n",
-        "   ...............\n\n  Terra:  (____)\n",
-        "********* IMPACTO *********\n\n  Terra:  (____)\n"
+        "           .\n\n  Earth:  (____)\n",
+        "         ...\n\n  Earth:  (____)\n",
+        "      .........\n\n  Earth:  (____)\n",
+        "   ...............\n\n  Earth:  (____)\n",
+        "********* IMPACT *********\n\n  Earth:  (____)\n"
     };
 
     for (i = 0; i < 5; i++) {
@@ -95,23 +95,23 @@ void asteroidImpact(void) {
     }
 }
 
-void basicTransition(const char *titulo) {
+void basicTransition(const char *title) {
     cleanWindow();
     printf("=========================================\n");
-    printf("   %s\n", titulo);
+    printf("   %s\n", title);
     printf("=========================================\n\n");
     loadingBar("Loading", 24, 45000);
 }
 
-void loadingBar(const char *texto, int passos, int delay_us) {
+void loadingBar(const char *text, int steps, int delay_us) {
     const char *frames[] = {"[=     ]", "[==    ]", "[===   ]", "[====  ]", "[===== ]", "[======]"};
     int nframes = 6, i;
 
-    printf("%s ", texto);
+    printf("%s ", text);
     fflush(stdout);
 
-    for (i = 0; i < passos; i++) {
-        printf("\r%s %s %3d%%", texto, frames[i % nframes], (i + 1) * 100 / passos);
+    for (i = 0; i < steps; i++) {
+        printf("\r%s %s %3d%%", text, frames[i % nframes], (i + 1) * 100 / steps);
         fflush(stdout);
         sleepNew(delay_us);
     }
@@ -172,7 +172,7 @@ int read_int(const char *prompt) {
         printf("%s", prompt);
         if (!fgets(buf, sizeof(buf), stdin)) return 0;
         if (sscanf(buf, "%d", &x) == 1) return x;
-        printf("Entrada inválida. Tente novamente.\n");
+        printf("Invalid input. Try again.\n");
     }
 }
 
@@ -223,9 +223,9 @@ int parse_csv_line(char *line, Asteroid *out) {
 }
 
 static int load_csv(const char *path, AsteroidDB *db) {
-    FILE *fp = fopen(path, "r"); // modo "r" conforme tabela de modos :contentReference[oaicite:3]{index=3}
+    FILE *fp = fopen(path, "r");
     if (!fp) {
-        printf("Erro: não consegui abrir '%s'\n", path);
+        printf("Error: could not open '%s'\n", path);
         return 0;
     }
 
@@ -235,7 +235,7 @@ static int load_csv(const char *path, AsteroidDB *db) {
         if (parse_csv_line(line, &a)) {
             if (!db_push(db, a)) {
                 fclose(fp);
-                printf("Erro: memória insuficiente.\n");
+                printf("Error: insufficient memory.\n");
                 return 0;
             }
         }
@@ -293,16 +293,6 @@ void list_all(const AsteroidDB *db) {
     for (i = 0; i < db->size; i++) print_one(&db->data[i]);
 }
 
-/*void list_hazardous(const AsteroidDB *db) {
-    basicTransition("PLANETARY DEFENSE MODE: FILTERING THE MOST DANGEROUS ONES");
-    asteroidImpact(); 
-
-    print_header();
-    size_t i;
-    for (i = 0; i < db->size; i++) {
-        if (db->data[i].isHazardous) print_one(&db->data[i]);
-    }
-}*/
 
 void show_menu(void) {
     printf("\n=== WELCOMEEEEE EXPLORER!! ===\n");
@@ -317,7 +307,7 @@ void show_menu(void) {
 
 void search_by_name(const AsteroidDB *db) {
     char q[STR_MAX];
-    read_string("Digite parte do nome (case-insensitive): ", q, sizeof(q));
+    read_string("Type part of the name (case-insensitive): ", q, sizeof(q));
     char qlow[STR_MAX];
     strncpy(qlow, q, sizeof(qlow)-1); qlow[sizeof(qlow)-1] = '\0';
     tolower_str(qlow);
@@ -415,7 +405,7 @@ void new_register(AsteroidDB *db, char *g_csv_path, const RangeMap *maps, int ma
 
 
     if (!db_push(db, a)) {
-        printf("Erro: memória insuficiente ao inserir novo registro.\n");
+        printf("Erro: insufficient memory to insert a new register.\n");
         return;
     }
 
