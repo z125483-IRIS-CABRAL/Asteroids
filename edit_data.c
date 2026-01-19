@@ -2,26 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define STR_MAX 128
-
-typedef struct {
-    char date[16];                  
-    char name[STR_MAX];             
-    long id;                        
-    int isHazardous;                
-    double absolute_magnitude_h;    
-    double diameter_min_m;
-    double diameter_max_m;
-    double miss_distance_km;
-    double velocity_km_s;
-} Asteroid;
-
-typedef struct {
-    Asteroid *data;
-    size_t size;
-    size_t cap;
-} AsteroidDB;
-
+#include "edit_data.h" 
 
 static void local_read_string(const char *prompt, char *out, size_t size) {
     printf("%s", prompt);
@@ -93,6 +74,8 @@ void edit_data(AsteroidDB *db) {
     printf(" Hazardous  : %s\n", found->isHazardous ? "Yes" : "No");
     printf(" Velocity   : %.2f km/s\n", found->velocity_km_s);
     printf(" Diameter   : %.1f m (min) - %.1f m (max)\n", found->diameter_min_m, found->diameter_max_m);
+    printf(" Abs Magnitude   : %.2f H\n", found->absolute_magnitude_h);
+    printf(" Miss Distance   : %.2f km\n", found->miss_distance_km);
     printf("-----------------------------------\n");
     
     printf(">> Please enter new values below:\n");
@@ -102,10 +85,14 @@ void edit_data(AsteroidDB *db) {
 
     int h = local_read_int("Is Hazardous? (1=True, 0=False): ");
     found->isHazardous = (h == 1);
-
     found->velocity_km_s  = local_read_double("New Velocity (km/s): ");
     found->diameter_min_m = local_read_double("New Min Diameter (m): ");
     found->diameter_max_m = local_read_double("New Max Diameter (m): ");
+    found->absolute_magnitude_h = local_read_double("New Abs Magnitude (H): ");
+    found->miss_distance_km = local_read_double("New Miss Distance (km)");
+
+    // if not hazard: delete!
+    //if date is not nbetween the range of the current CSV, change CSV and save on the correct one
 
     // 5. Update asteroid data
     printf("\n[SUCCESS] Data updated successfully!\n");
