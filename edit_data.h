@@ -1,4 +1,3 @@
-// edit_data.h
 #ifndef EDIT_DATA_H
 #define EDIT_DATA_H
 
