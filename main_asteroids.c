@@ -5,7 +5,8 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
-
+#include "edit_data.h"
+#include "asteroid_db.h"
 
 /* function's prototype*/
 void loadingBar(const char *texto, int passos, int delay_us);
@@ -13,6 +14,7 @@ void basicTransition(const char *titulo);
 void asteroidImpact(void);
 void cleanWindow(void);
 
+#define _XOPEN_SOURCE 700
 
  /* BASIC COMMANDS TO USE DURING THE ENTIRE EXECUTION */
 #ifdef _WIN32
@@ -34,28 +36,6 @@ void cleanWindow() {
 
 /* defining*/
 #define LINE_MAX_LEN 2048
-#define STR_MAX 128
-
-/* STRUCTURES */
-typedef struct {
-    char date[16];                  // 2026-01-04
-    char name[STR_MAX];             // 67381 (2000 OL8)
-    long id;                        // id do NEO
-    int isHazardous;                  // True / False
-    double absolute_magnitude_h;    // H
-    double diameter_min_m;
-    double diameter_max_m;
-    double miss_distance_km;
-    double velocity_km_s;
-} Asteroid;
-
-
-typedef struct {
-    Asteroid *data;
-    size_t size;    // quantos registros usados
-    size_t cap;     // capacidade alocada
-} AsteroidDB;
-
 
 typedef struct {
         int start;            // ex: 20251201
@@ -329,7 +309,7 @@ static void show_menu(void) {
     printf("2) Change the date range\n");
     printf("3) Search by name\n");
     printf("4) New register\n");
-    printf("5) Update <notworking>\n");
+    printf("5) Update\n");
     printf("6) Delete <notworking>\n");
     printf("7) Save CSV <notworking>\n");
     printf("0) QUIT <notworking>\n");
@@ -361,6 +341,9 @@ static void new_register(AsteroidDB *db, char *g_csv_path) {
 
     // 1) Strings
     read_string("Date (YYYY-MM-DD): ", a.date, sizeof(a.date));
+    //if date is not nbetween the range of the current CSV, change CSV and save on the correct one. 
+    // alert and change the csv
+
     read_string("Name: ", a.name, sizeof(a.name));
 
     // 2) ID numérico
@@ -521,6 +504,8 @@ int main(void) {
         }
         else if (op == 3) search_by_name(&db);
         else if(op == 4) new_register(&db, path_in);
+        else if (op == 5) edit_data(&db);
+
         // ... (resto das opções)
 
         int again = read_int("Do you want to explore more? (1=yes, 0=no): ");
