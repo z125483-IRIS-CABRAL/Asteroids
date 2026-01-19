@@ -16,7 +16,6 @@ static void local_read_string(const char *prompt, char *out, size_t size) {
     }
 }
 
-// Input double
 static double local_read_double(const char *prompt) {
     char buf[64];
     double value;
@@ -27,7 +26,6 @@ static double local_read_double(const char *prompt) {
     return 0.0;
 }
 
-// Input int
 static int local_read_int(const char *prompt) {
     char buf[64];
     int value;
@@ -39,17 +37,14 @@ static int local_read_int(const char *prompt) {
 }
 
 
-/* ---  Edit Data (Flowchart #4) --- */
 void edit_data(AsteroidDB *db) {
     printf("\n=========================================\n");
     printf("     EDIT MODE: UPDATE ASTEROID DATA     \n");
     printf("=========================================\n");
 
-    // 1. Request asteroid name
     char targetName[STR_MAX];
     local_read_string("Enter the name of the asteroid to edit: ", targetName, sizeof(targetName));
 
-    // 2. Search logic
     Asteroid *found = NULL;
     int i;
     for (i = 0; i < db->size; i++) {
@@ -59,16 +54,12 @@ void edit_data(AsteroidDB *db) {
         }
     }
 
-    // 3. Name found?
-    
-    // Case No: Ouput error message and return
     if (found == NULL) {
         printf("\n[ERROR] Asteroid '%s' not found in database.\n", targetName);
         printf("Returning to menu...\n");
         return; 
     }
 
-    // Case Yes: Show current data and keep edit
     printf("\n--- Current Data for '%s' ---\n", found->name);
     printf(" Found Date : %s\n", found->date);
     printf(" Hazardous  : %s\n", found->isHazardous ? "Yes" : "No");
@@ -80,9 +71,6 @@ void edit_data(AsteroidDB *db) {
     
     printf(">> Please enter new values below:\n");
 
-    // 4. New Data
-    local_read_string("New Date (YYYY-MM-DD): ", found->date, sizeof(found->date));
-
     int h = local_read_int("Is Hazardous? (1=True, 0=False): ");
     found->isHazardous = (h == 1);
     found->velocity_km_s  = local_read_double("New Velocity (km/s): ");
@@ -91,10 +79,6 @@ void edit_data(AsteroidDB *db) {
     found->absolute_magnitude_h = local_read_double("New Abs Magnitude (H): ");
     found->miss_distance_km = local_read_double("New Miss Distance (km)");
 
-    // if not hazard: delete!
-    //if date is not nbetween the range of the current CSV, change CSV and save on the correct one
-
-    // 5. Update asteroid data
     printf("\n[SUCCESS] Data updated successfully!\n");
     
     printf("Updated: [%s] %s (Vel: %.2f km/s)\n", found->date, found->name, found->velocity_km_s);
