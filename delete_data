@@ -1,0 +1,111 @@
+#include <stdio.h>
+#include <string.h>
+
+#include "delete_data.h"
+
+#ifndef STR_MAX
+#define STR_MAX 128
+#endif
+
+static void local_read_string(const char *prompt, char *out, size_t outsz) {
+    printf("%s", prompt);
+    if (fgets(out, (int)outsz, stdin)) {
+        size_t n = strlen(out);
+        while (n > 0 && (out[n-1] == '\n' || out[n-1] == '\r')) {
+            out[n-1] = '\0';
+            n--;
+        }
+    } else {
+        out[0] = '\0';
+    }
+}
+
+static int local_read_int(const char *prompt) {
+    char buf[64];
+    int x;
+    for (;;) {
+        printf("%s", prompt);
+        if (!fgets(buf, sizeof(buf), stdin)) return 0;
+        if (sscanf(buf, "%d", &x) == 1) return x;
+        printf("Invalid input. Try again.\n");
+    }
+}
+
+static int find_index_by_name_date(const AsteroidDB *db, const char *name, const char *date) {
+    size_t i;
+    for (i = 0; i < db->size; i++) {
+        if (strcmp(db->data[i].name, name) == 0 &&
+            strcmp(db->data[i].date, date) == 0) {
+            return (int)i;
+        }
+    }
+    return -1;
+}
+
+static void db_delete_index(AsteroidDB *db, size_t idx) {
+    size_t i;
+    if (idx >= db->size) return;
+    for (i = idx; i + 1 < db->size; i++) {
+        db->data[i] = db->data[i + 1];
+    }
+    db->size--;
+}
+
+static int rewrite_csv(const char *path, const AsteroidDB *db) {
+    FILE *fp = fopen(path, "w");
+    if (!fp) return 0;
+
+    fprintf(fp, "date,name,id,hazardous,absolute_magnitude_h,diameter_min_m,diameter_max_m,miss_distance_km,velocity_km_s\n");
+
+    for (size_t i = 0; i < db->size; i++) {
+        const Asteroid *a = &db->data[i];
+        fprintf(fp, "%s,%s,%ld,%s,%.10f,%.10f,%.10f,%.10f,%.10f\n",
+                a->date,
+                a->name,
+                a->id,
+                a->isHazardous ? "True" : "False",
+                a->absolute_magnitude_h,
+                a->diameter_min_m,
+                a->diameter_max_m,
+                a->miss_distance_km,
+                a->velocity_km_s);
+    }
+
+    fclose(fp);
+    return 1;
+}
+
+void delete_data(AsteroidDB *db, const char *csv_path) {
+    printf("\n=========================================\n");
+    printf("     DELETE MODE: REMOVE ASTEROID DATA   \n");
+    printf("=========================================\n");
+
+    char targetName[STR_MAX];
+    char targetDate[16];
+
+    local_read_string("Asteroid name (exact): ", targetName, sizeof(targetName));
+    local_read_string("Date (YYYY-MM-DD): ", targetDate, sizeof(targetDate));
+
+    int idx = find_index_by_name_date(db, targetName, targetDate);
+    if (idx < 0) {
+        printf("\n[ERROR] '%s' on '%s' not found.\n", targetName, targetDate);
+        return;
+    }
+
+    printf("\nFound! This record will be deleted:\n");
+    printf(" - %s | %s | id=%ld\n", db->data[idx].date, db->data[idx].name, db->data[idx].id);
+
+    int ok = local_read_int("Confirm delete? (1=yes, 0=no): ");
+    if (ok != 1) {
+        printf("Canceled.\n");
+        return;
+    }
+
+    db_delete_index(db, (size_t)idx);
+
+    if (!rewrite_csv(csv_path, db)) {
+        printf("[WARNING] Deleted in memory, but FAILED to update CSV: %s\n", csv_path);
+    } else {
+        printf("[SUCCESS] Deleted and CSV updated: %s\n", csv_path);
+    }
+}
