@@ -1,4 +1,3 @@
-// asteroid_db.h
 #ifndef ASTEROID_DB_H
 #define ASTEROID_DB_H
 
