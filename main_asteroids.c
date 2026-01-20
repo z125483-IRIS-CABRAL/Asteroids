@@ -485,55 +485,56 @@ int main(void) {
 
     for (;;) {
         int op = read_int("Your choice: ");
+
         if (op == 0) break;
         else if (op == 1) list_all(&db);
 //        else if (op == 2) list_hazardous(&db);
         else if (op == 2){
-        path_in[0] = '\0';
-        char new_input[64];
-            printf("Type a date to unblock the secret data (YYYY-MM-DD): ");
-            if (!fgets(new_input, sizeof(new_input), stdin)) {
-                printf("Input error.\n");
-                return 1;
-            }
-
-            int new_year, new_month, new_day;            
-            if (sscanf(new_input, "%d-%d-%d", &new_year, &new_month, &new_day) != 3) {
-                printf("Sorry, invalid input format! Not this time, hacker.\n");
-                return 1;
-            }
-            if (new_year < 1900 || new_month < 1 || new_month > 12 || new_day < 1 || new_day > 31) {
-                printf("Sorry, invalid date values.\n");
-                return 1;
-            }
-
-            int i;
-            int new_key = new_year * 10000 + new_month * 100 + new_day; // YYYYMMDD
-            for (i = 0; i < maps_n; i++) {
-                if (new_key >= maps[i].start && new_key <= maps[i].end) {
-                    strcpy(path_in, maps[i].csv);   
-                    break;
+            db_free(&db);
+            path_in[0] = '\0';
+            char new_input[64];
+                printf("Type a date to unblock the secret data (YYYY-MM-DD): ");
+                if (!fgets(new_input, sizeof(new_input), stdin)) {
+                    printf("Input error.\n");
+                    return 1;
                 }
-            }
 
-            if (path_in[0] == '\0') {
-                printf("Sorry, there is no data for this range! Let's explore more.\n");
-                db_free(&db);
-                return 1;
-            }
+                int new_year, new_month, new_day;            
+                if (sscanf(new_input, "%d-%d-%d", &new_year, &new_month, &new_day) != 3) {
+                    printf("Sorry, invalid input format! Not this time, hacker.\n");
+                    return 1;
+                }
+                if (new_year < 1900 || new_month < 1 || new_month > 12 || new_day < 1 || new_day > 31) {
+                    printf("Sorry, invalid date values.\n");
+                    return 1;
+                }
 
-            basicTransition("STARTING MISSION SYSTEMS");
-            loadingBar("Getting NEOs catalogs", 28, 40000);
+                int i;
+                int new_key = new_year * 10000 + new_month * 100 + new_day; // YYYYMMDD
+                for (i = 0; i < maps_n; i++) {
+                    if (new_key >= maps[i].start && new_key <= maps[i].end) {
+                        strcpy(path_in, maps[i].csv);   
+                        break;
+                    }
+                }
 
-            if (!load_csv(path_in, &db)) {
-                printf("Failed to load CSV. Finishing.\n");
-                db_free(&db);
-                return 1;
-            }
+                if (path_in[0] == '\0') {
+                    printf("Sorry, there is no data for this range! Let's explore more.\n");
+                    db_free(&db);
+                    return 1;
+                }
 
-            loadingBar("Synchronizing db and memory", 20, 35000);
-            printf("OK! %zu registers loaded from %s!\n", db.size, path_in);
+                basicTransition("STARTING MISSION SYSTEMS");
+                loadingBar("Getting NEOs catalogs", 28, 40000);
 
+                if (!load_csv(path_in, &db)) {
+                    printf("Failed to load CSV. Finishing.\n");
+                    db_free(&db);
+                    return 1;
+                }
+
+                loadingBar("Synchronizing db and memory", 20, 35000);
+                printf("OK! %zu registers loaded from %s!\n", db.size, path_in);
         }
         else if (op == 3) search_by_name(&db);
         else if(op == 4) new_register(&db, path_in, maps, maps_n);
