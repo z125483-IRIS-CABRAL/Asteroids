@@ -320,10 +320,31 @@ void search_by_name(const AsteroidDB *db) {
         tolower_str(name_low);
 
         if (strstr(name_low, qlow)) print_one(&db->data[i]);
+        
     }
 }
 
- /*  LUCAS - NEW REGISTER */
+int exists_name_date_ci(const AsteroidDB *db, const char *name, const char *date) {
+    char name_q[STR_MAX], date_q[16];
+    strncpy(name_q, name, sizeof(name_q)-1); name_q[sizeof(name_q)-1] = '\0';
+    strncpy(date_q, date, sizeof(date_q)-1); date_q[sizeof(date_q)-1] = '\0';
+    tolower_str(name_q);
+    tolower_str(date_q);
+
+    for (size_t i = 0; i < db->size; i++) {
+        char n[STR_MAX], d[16];
+        strncpy(n, db->data[i].name, sizeof(n)-1); n[sizeof(n)-1] = '\0';
+        strncpy(d, db->data[i].date, sizeof(d)-1); d[sizeof(d)-1] = '\0';
+        tolower_str(n);
+        tolower_str(d);
+
+        if (strcmp(n, name_q) == 0 && strcmp(d, date_q) == 0) return 1;
+    }
+    return 0;
+}
+
+
+/* NEW REGISTER */
 static int datekey_from_ymd_dash(const char *s) {
     int y, m, d;
     if (sscanf(s, "%d-%d-%d", &y, &m, &d) != 3) return -1;
@@ -338,15 +359,17 @@ static const char* csv_for_key(int key, const RangeMap *maps, int maps_n) {
     return NULL;
 }
 
-static long generate_next_id(const AsteroidDB *db) {
-    long max_id = 0;
-
+static long max_id_in_db(const AsteroidDB *db) {
+    long maxid = 0;
     for (size_t i = 0; i < db->size; i++) {
-        if (db->data[i].id > max_id) {
-            max_id = db->data[i].id;
-        }
+        if (db->data[i].id > maxid) maxid = db->data[i].id;
     }
-    return max_id + 1;
+    return maxid;
+}
+
+static long generate_next_id(const AsteroidDB *db) {
+    long maxid = max_id_in_db(db);
+    return maxid + 1; 
 }
 
 void new_register(AsteroidDB *db, char *g_csv_path, const RangeMap *maps, int maps_n) {
@@ -401,22 +424,27 @@ void new_register(AsteroidDB *db, char *g_csv_path, const RangeMap *maps, int ma
     a.miss_distance_km     = read_double("Miss distance (km): ");
     a.velocity_km_s        = read_double("Velocity (km/s): ");
     a.id = generate_next_id(db);
-    printf("Generated NEO ID: %ld\n", a.id);
-
-
-    if (!db_push(db, a)) {
-        printf("Erro: insufficient memory to insert a new register.\n");
+    if (exists_name_date_ci(db, a.name, a.date)) {
+        printf("[ERROR] A record with the same NAME and DATE already exists. Insert canceled.\n");
         return;
-    }
+    }else{
+        printf("Generated NEO ID: %ld\n", a.id);
 
-    if (!append_asteroid_csv(g_csv_path, &a)) {
-        printf("[WARNING] Saved in memory, but FAILED to update CSV.\n");
-    } else {
-        printf("[SUCCESS] New asteroid saved in %s\n", g_csv_path);
-    }
 
-    print_header();
-    print_one(&a);
+        if (!db_push(db, a)) {
+            printf("Erro: insufficient memory to insert a new register.\n");
+            return;
+        }
+
+        if (!append_asteroid_csv(g_csv_path, &a)) {
+            printf("[WARNING] Saved in memory, but FAILED to update CSV.\n");
+        } else {
+            printf("[SUCCESS] New asteroid saved in %s\n", g_csv_path);
+        }
+
+        print_header();
+        print_one(&a);
+    }
 }
 
 
